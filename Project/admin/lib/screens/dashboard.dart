@@ -1,6 +1,7 @@
 import 'package:admin/components/sidebutton.dart';
 import 'package:admin/screens/diettype.dart';
 import 'package:admin/screens/district.dart';
+import 'package:admin/screens/place.dart';
 import 'package:admin/screens/profile.dart';
 import 'package:flutter/material.dart';
 
@@ -18,18 +19,21 @@ class _DashboardState extends State<Dashboard> {
     'Profile',
     'District',
     'Diet Type',
+    'Place',
   ];
 
   List<IconData> pageIcon = [
     Icons.account_circle,
     Icons.location_on,
     Icons.food_bank_outlined,
+    Icons.location_city
   ];
 
   List<Widget> pageContent = [
     Profile(),
     Distrect(),
     Diettype(),
+    Place()
   ];
 
   @override
