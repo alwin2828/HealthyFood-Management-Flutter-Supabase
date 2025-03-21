@@ -50,7 +50,7 @@ class _LoginState extends State<Login> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                    image: DecorationImage( 
+                    image: DecorationImage(
                         image: AssetImage(
                           'assets/square_image.jpg',
                         ),

@@ -22,11 +22,7 @@ class _ChangePasswordState extends State<ChangePassword> {
        appBar: AppBar(
         leading: IconButton(
             onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MyProfile(),
-                  ));
+              Navigator.pop(context);
             },
             icon: Icon(Icons.arrow_back)),
         title: Text(

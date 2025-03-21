@@ -26,13 +26,11 @@ class _PlaceState extends State<Place> {
           {"place_name": placeController.text, "district_id": selectedDist});
 
       fetchdata();
-      print("inserted");
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("inserted")));
+          .showSnackBar(SnackBar(content: Text("Inserted")));
     } catch (e) {
-      print("error $e");
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("error $e")));
+          .showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -43,7 +41,7 @@ class _PlaceState extends State<Place> {
         fechdistrict = response;
       });
     } catch (e) {
-      print("Error District $e");
+      print("Error fetching districts: $e");
     }
   }
 
@@ -51,12 +49,11 @@ class _PlaceState extends State<Place> {
     try {
       final response =
           await supabase.from("tbl_place").select('*,tbl_district(*)');
-      print(response);
       setState(() {
         fechplace = response;
       });
     } catch (e) {
-      print('error $e');
+      print("Error fetching places: $e");
     }
   }
 
@@ -67,7 +64,7 @@ class _PlaceState extends State<Place> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Deleted")));
     } catch (e) {
-      print("Error Deleting $e");
+      print("Error deleting: $e");
     }
   }
 
@@ -75,118 +72,119 @@ class _PlaceState extends State<Place> {
 
   @override
   Widget build(BuildContext context) {
-    return Form(
-        child: Center(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              "District",
-              style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "District",
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.teal),
+          ),
+          SizedBox(height: 20),
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey.shade300),
             ),
-            SizedBox(
-              height: 30,
-            ),
-            Container(
-              width: 400,
-              height: 200,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: Color.fromARGB(255, 24, 157, 72),
-                  width: 4,
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: DropdownButtonFormField(
-                        value: selectedDist,
-                        items: fechdistrict.map((district) {
-                          return DropdownMenuItem(
-                              value: district['id'].toString(),
-                              child: Text(district['district_name']));
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedDist = value;
-                          });
-                        },
-                      )),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TextFormField(
-                      controller: placeController,
-                      decoration: InputDecoration(
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(
-                              width: 2,
-                              color: Color.fromARGB(255, 24, 157, 72)),
-                        ),
-                        hintText: 'Enter Your Place',
-                        label: Text("Place"),
-                        prefixIcon: Icon(Icons.location_city_rounded),
-                      ),
+            child: Column(
+              children: [
+                DropdownButtonFormField(
+                  value: selectedDist,
+                  items: fechdistrict.map((district) {
+                    return DropdownMenuItem(
+                      value: district['id'].toString(),
+                      child: Text(district['district_name']),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedDist = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: "Select District",
+                    prefixIcon: Icon(Icons.map, color: Colors.teal),
+                    border: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.teal),
                     ),
                   ),
-                  ElevatedButton(
+                ),
+                SizedBox(height: 10),
+                TextField(
+                  controller: placeController,
+                  decoration: InputDecoration(
+                    hintText: 'Enter place name',
+                    labelText: "Place",
+                    prefixIcon: Icon(Icons.location_city_rounded, color: Colors.teal),
+                    border: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.teal),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10),
+                SizedBox(
+                  width: 150,
+                  child: ElevatedButton(
                     onPressed: () {
                       insert();
                     },
-                    child: Text(
-                      "Submit",
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    child: Text("Submit", style: TextStyle(fontSize: 14)),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF25A18B)),
-                  )
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: fechplace.length,
-                itemBuilder: (context, index) {
-                  final _PlaceState = fechplace[index];
-                  return ListTile(
-                      leading: Text((index + 1).toString()),
-                      title: Text(
-                        _PlaceState['place_name'],
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      subtitle:
-                          Text(_PlaceState['tbl_district']['district_name']),
-                      trailing: SizedBox(
-                        width: 80,
-                        child: Row(
-                          children: [
-                            IconButton(
-                                onPressed: () {
-                                  delete(_PlaceState['id']);
-                                },
-                                icon: Icon(Icons.delete_outline)),
-                            IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    // district.text=_district['district_name'];
-                                    // editId=_district['id'];
-                                  });
-                                },
-                                icon: Icon(Icons.edit))
-                          ],
-                        ),
-                      ));
-                },
-              ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          SizedBox(height: 20),
+          Expanded(
+            child: ListView.builder(
+              itemCount: fechplace.length,
+              itemBuilder: (context, index) {
+                final _place = fechplace[index];
+                return ListTile(
+                  leading: Icon(Icons.place, color: Colors.teal),
+                  title: Text(
+                    _place['place_name'],
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                  ),
+                  subtitle: Text(_place['tbl_district']['district_name']),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: () => delete(_place['id']),
+                        icon: Icon(Icons.delete_outline, color: Colors.redAccent),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            placeController.text = _place['place_name'];
+                            selectedDist = _place['tbl_district']['id'].toString();
+                          });
+                        },
+                        icon: Icon(Icons.edit, color: Colors.teal),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
-    ));
+    );
   }
 }

@@ -10,37 +10,33 @@ class Diettype extends StatefulWidget {
 }
 
 class _DiettypeState extends State<Diettype> {
-  TextEditingController diettype=TextEditingController();
-  List<Map<String,dynamic>>fechdiettype=[];
+  TextEditingController diettype = TextEditingController();
+  List<Map<String, dynamic>> fechdiettype = [];
 
-@override
-void initState(){
-  super.initState();
-  fetchdata();
-}
-  
-  Future<void> insert()async
-  {
+  @override
+  void initState() {
+    super.initState();
+    fetchdata();
+  }
+
+  Future<void> insert() async {
     try {
-      await supabase.from("tbl_diettype").insert({"diettype_name":diettype.text});
+      await supabase.from("tbl_diettype").insert({"diettype_name": diettype.text});
       fetchdata();
-      print("inserted");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("inserted")));
-
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Inserted")));
     } catch (e) {
-      print("error $e");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("error $e")));
-      
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
-  Future<void>fetchdata()async{
+
+  Future<void> fetchdata() async {
     try {
-      final response=await supabase.from("tbl_diettype").select();
+      final response = await supabase.from("tbl_diettype").select();
       setState(() {
-        fechdiettype=response;
+        fechdiettype = response;
       });
     } catch (e) {
-      
+      print("Error fetching data: $e");
     }
   }
 
@@ -50,7 +46,7 @@ void initState(){
       fetchdata();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Deleted")));
     } catch (e) {
-      print("Error Deleting $e");
+      print("Error Deleting: $e");
     }
   }
 
@@ -58,109 +54,113 @@ void initState(){
 
   Future<void> update() async {
     try {
-      await supabase.from("tbl_diettype").update({
-        "diettype_name":diettype.text
-      }).eq('id', editId);
+      await supabase.from("tbl_diettype").update({"diettype_name": diettype.text}).eq('id', editId);
       fetchdata();
       diettype.clear();
       setState(() {
-        editId=0;
+        editId = 0;
       });
     } catch (e) {
-      
+      print("Error updating: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white10,
-      body: Form(
-        child: Center(
-        child: Padding(padding:
-        const EdgeInsets.all(8.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text("Diet Type",style: TextStyle(fontSize: 40,fontWeight:FontWeight.bold),),
-            SizedBox(
-              height: 30,
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Diet Type",
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.teal),
+          ),
+          SizedBox(height: 20),
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey.shade300),
             ),
-            Container(
-              width: 400,
-              height: 200,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: Color.fromARGB(255, 24, 157, 72),
-                  width: 4,
+            child: Column(
+              children: [
+                TextField(
+                  controller: diettype,
+                  decoration: InputDecoration(
+                    hintText: 'Enter diet type',
+                    labelText: "Diet Type",
+                    prefixIcon: Icon(Icons.restaurant_menu, color: Colors.teal),
+                    border: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.teal),
+                    ),
+                  ),
                 ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TextFormField(
-                      controller: diettype,
-                      decoration: InputDecoration(
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide:BorderSide(width: 2,color:Color.fromARGB(255, 24, 157, 72),),
-                        ),
-                        hintText: 'Enter diet type',
-                        label: Text("Diet Type"),
-                        prefixIcon: Icon(Icons.location_city_rounded),
+                SizedBox(height: 10),
+                SizedBox(
+                  width: 150,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (editId == 0) {
+                        insert();
+                      } else {
+                        update();
+                      }
+                    },
+                    child: Text("Submit", style: TextStyle(fontSize: 14)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
                   ),
-                  ElevatedButton(onPressed: (){
-                    if(editId==0){
-                      insert();
-                    }
-                    else{
-                      update();
-                    }
-                  },child: Text("Submit",style: TextStyle(color: Colors.white),),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:Color(0xFF25A18B)
-                  ),)
-                ],
-              ),
-            ),
-            Expanded(child: 
-            ListView.builder(itemCount:fechdiettype.length, 
-            itemBuilder: (context, index) {
-              final _diettype=fechdiettype[
-                index
-              ];
-              return ListTile(
-                leading: Text(
-                _diettype['diettype_name'],
                 ),
-                trailing: SizedBox(
-                  width: 80,
-                  child: Row(
+              ],
+            ),
+          ),
+          SizedBox(height: 20),
+          Expanded(
+            child: ListView.builder(
+              itemCount: fechdiettype.length,
+              itemBuilder: (context, index) {
+                final _diettype = fechdiettype[index];
+                return ListTile(
+                  leading: Icon(Icons.local_dining, color: Colors.teal),
+                  title: Text(
+                    _diettype['diettype_name'],
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(onPressed: (){
-                        delete(_diettype['id']);
-                      }, icon: Icon(Icons.delete_outline)),
-                      IconButton(onPressed: (){
-                        setState(() {
-                          diettype.text=_diettype['diettype_name'];
-                          editId=_diettype['id'];
-                        });
-                      }, icon: Icon(Icons.edit))
+                      IconButton(
+                        onPressed: () => delete(_diettype['id']),
+                        icon: Icon(Icons.delete_outline, color: Colors.redAccent),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            diettype.text = _diettype['diettype_name'];
+                            editId = _diettype['id'];
+                          });
+                        },
+                        icon: Icon(Icons.edit, color: Colors.teal),
+                      ),
                     ],
                   ),
-                ),
-              );
-            },),),
-          ],
-        ),
-        ),
-      )),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

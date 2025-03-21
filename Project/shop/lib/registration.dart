@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:shop/components/custom_textfield.dart';
+import 'package:shop/login.dart';
 import 'package:shop/main.dart';
 
 class Registration extends StatefulWidget {
@@ -22,171 +24,145 @@ class _RegistrationState extends State<Registration> {
   final TextEditingController _password = TextEditingController();
   final TextEditingController _cpassword = TextEditingController();
 
-  // Handle File Upload Process
   Future<void> handleImagePick() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      allowMultiple: false, // Only single file upload
-    );
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
     if (result != null) {
       setState(() {
         pickedImage = result.files.first;
+        _photo.text = pickedImage!.name;
       });
     }
   }
 
-  Future<String?> photoUpload(String uid) async {
+  Future<void> handleProofPick() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    if (result != null) {
+      setState(() {
+        pickedLicense = result.files.first;
+        _license.text = pickedLicense!.name;
+      });
+    }
+  }
+
+  Future<String?> uploadFile(PlatformFile? file, String prefix, String uid) async {
+    if (file == null) return null;
     try {
-      final bucketName = 'teacher'; // Replace with your bucket name
-      final filePath = "$uid-${pickedImage!.name}";
-      await supabase.storage.from(bucketName).uploadBinary(
-            filePath,
-            pickedImage!.bytes!, // Use file.bytes for Flutter Web
-          );
-      final publicUrl =
-          supabase.storage.from(bucketName).getPublicUrl(filePath);
-      // await updateImage(uid, publicUrl);
-      return publicUrl;
+      final filePath = "$prefix-$uid-${file.name}";
+      await supabase.storage.from('shop').uploadBinary(filePath, file.bytes!);
+      return supabase.storage.from('shop').getPublicUrl(filePath);
     } catch (e) {
-      print("Error photo upload: $e");
+      print("Error uploading $prefix: $e");
       return null;
     }
   }
-  
+
+  void registerUser() async {
+    print("Registering user...");
+    try {
+    //   if (_name.text.isEmpty ||
+    //     _email.text.isEmpty ||
+    //     _cnum.text.isEmpty ||
+    //     _address.text.isEmpty ||
+    //     _password.text.isEmpty ||
+    //     _cpassword.text.isEmpty) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     SnackBar(content: Text('Please fill all fields')),
+    //   );
+    //   return;
+    // }
+
+    // if (_password.text != _cpassword.text) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     SnackBar(content: Text('Passwords do not match')),
+    //   );
+    //   return;
+    // }
+
+    final auth = await supabase.auth.signUp(email:_email.text, password:_password.text);
+    String uid = auth.user!.id;
+
+    String? photoUrl = await uploadFile(pickedImage, "photo", uid);
+    String? licenseUrl = await uploadFile(pickedLicense, "license", uid);
+
+    final userData = {
+      "shop_name": _name.text,
+      "shop_email": _email.text,
+      "shop_contact": _cnum.text,
+      "shop_address": _address.text,
+      "shop_photo": photoUrl ?? '',
+      "shop_license": licenseUrl ?? '',
+      "shop_password": _password.text, // Encrypt before saving!
+    };
+
+    await supabase.from('tbl_shop').insert(userData);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Registration Successful')),
+    );
+  Navigator.push(context, MaterialPageRoute(builder: (context) => Login(),));
+    } catch (e) {
+      print("Error registering user: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error registering user')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SizedBox.expand(
-        child: Container(
-          decoration: BoxDecoration(
-              image: DecorationImage(
-                  image: AssetImage('assets/bg1.jpg'), fit: BoxFit.cover)),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.8),
-            ),
-            child: Center(
+      body: Container(
+        decoration: BoxDecoration(
+            image: DecorationImage(
+                image: AssetImage('assets/bg1.jpg'), fit: BoxFit.cover)),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Container(
+              width: 600,
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+              ),
               child: Form(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SingleChildScrollView(
-                        child: Container(
-                          width: 600,
-                          padding: EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.3),
-                                blurRadius: 10,
-                                spreadRadius: 2,
-                              )
-                            ],
-                          ),
-                          child: Form(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Center(
-                                  child: Text(
-                                    'Register',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: 20),
-                                buildTextField(
-                                    label: 'Full Name', icon: Icons.person, controller: _name),
-                                buildTextField(
-                                    label: 'Email', icon: Icons.email, controller: _email),
-                                buildTextField(
-                                    label: 'Phone Number', icon: Icons.phone, controller: _cnum),
-                                buildTextField(
-                                    label: 'Address', icon: Icons.location_on, controller: _address),
-                                buildTextField(
-                                    label: 'Photo (URL)', icon: Icons.image, controller: _photo),
-                                buildTextField(
-                                    label: 'License', icon: Icons.assignment, controller: _license),
-                                buildTextField(
-                                    label: 'Password',
-                                    icon: Icons.lock,
-                                    obscureText: true, controller: _password),
-                                buildTextField(
-                                    label: 'Confirm Password',
-                                    icon: Icons.lock,
-                                    obscureText: true, controller: _cpassword),
-                                SizedBox(height: 20),
-                                Center(
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 40, vertical: 15),
-                                      textStyle: TextStyle(fontSize: 16),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                    onPressed: () {},
-                                    child: Text('Register'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Text(
+                        'Register',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
-                      )
-                    ],
-                  ),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    CustomTextField(label: 'Full Name', icon: Icons.person, controller: _name),
+                    CustomTextField(label: 'Email', icon: Icons.email, controller: _email),
+                    CustomTextField(label: 'Phone Number', icon: Icons.phone, controller: _cnum),
+                    CustomTextField(label: 'Address', icon: Icons.location_on, controller: _address),
+                    CustomTextField(label: 'Photo', icon: Icons.image, controller: _photo, onTap: handleImagePick, readOnly: true),
+                    CustomTextField(label: 'License', icon: Icons.assignment, controller: _license, onTap: handleProofPick, readOnly: true),
+                    CustomTextField(label: 'Password', icon: Icons.lock, pass: true, controller: _password),
+                    CustomTextField(label: 'Confirm Password', icon: Icons.lock, pass: true, controller: _cpassword),
+                    SizedBox(height: 20),
+                    Center(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                          textStyle: TextStyle(fontSize: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: (){
+                          registerUser();
+                        },
+                        child: Text('Register'),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool obscureText = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscureText,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: Colors.grey),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget buildFileField({
-    required String label,
-    required IconData icon,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextFormField(
-        readOnly: true,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: Colors.grey),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
           ),
         ),
       ),

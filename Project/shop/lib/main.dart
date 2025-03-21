@@ -1,7 +1,6 @@
-import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:shop/index.dart';
+import 'package:shop/dashboard.dart';
 import 'package:shop/login.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -23,7 +22,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home:Login()
+      home:Dashboard()
     );
   }
 }

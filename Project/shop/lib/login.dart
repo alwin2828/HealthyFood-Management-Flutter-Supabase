@@ -1,7 +1,5 @@
-
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
+import 'package:shop/dashboard.dart';
 import 'package:shop/main.dart';
 import 'package:shop/registration.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -31,10 +29,10 @@ class _LoginState extends State<Login> {
       );
       final User? user = res.user;
       if (user != null) {
-        // Navigator.pushReplacement(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => const Dashboard()),
-        // );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Dashboard()),
+        );
       }
       print("signin successfull");
     } catch (e) {
