@@ -1,7 +1,8 @@
 
 import 'package:flutter/material.dart';
-import 'package:shop/dashboard.dart';
-import 'package:shop/login.dart';
+import 'package:shop/screens/dashboard.dart';
+import 'package:shop/screens/index.dart';
+import 'package:shop/screens/login.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -22,7 +23,25 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home:Dashboard()
+      home: AuthWrapper(),
     );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Check if the user is already logged in
+    final session = supabase.auth.currentSession;
+
+    if (session != null) {
+      // User is logged in, navigate to HomePage
+      return Index();
+    } else {
+      // User is not logged in, navigate to LandingPage
+      return Index();
+    }
   }
 }

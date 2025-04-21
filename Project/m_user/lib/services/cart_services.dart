@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:m_user/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ItemService {
 
@@ -8,6 +9,9 @@ class ItemService {
   Future<void> addToitem(BuildContext context, int id) async {
     try {
       final userId = supabase.auth.currentUser?.id;
+      final prefs = await SharedPreferences.getInstance();
+      String? shopId = await prefs.getString('shop');
+      print(userId);
       if (userId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("User not logged in")),
@@ -15,19 +19,21 @@ class ItemService {
         return;
       }
 
+
       // Get or create a order
       final order = await supabase
           .from('tbl_order')
           .select()
           .eq('order_status', 0)
           .eq('user_id', userId)
+          .eq('shop_id', shopId!)
           .maybeSingle();
 
       int orderId;
       if (order == null) {
         final response = await supabase
             .from('tbl_order')
-            .insert({'user_id': userId, 'order_status': 0})
+            .insert({'user_id': userId, 'order_status': 0, 'shop_id': shopId})
             .select("id")
             .single();
         orderId = response['id'];
@@ -51,7 +57,7 @@ class ItemService {
         await _updateitemQuantity(context, itemResponse['id'], itemResponse['item_quantity']);
       }
     } catch (e) {
-      print('Error adding to item: $e');
+      print('Error adding ordr to item: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error adding to item: $e")),
       );

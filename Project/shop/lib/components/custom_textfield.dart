@@ -28,7 +28,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   void initState() {
     super.initState();
-    isObscured = widget.pass; // Initialize state based on 'pass' property
+    isObscured = widget.pass;
   }
 
   @override

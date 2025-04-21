@@ -1,6 +1,6 @@
  import 'package:flutter/material.dart';
-import 'package:m_user/login.dart';
-import 'package:m_user/my_profile.dart';
+import 'package:m_user/main.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ChangePassword extends StatefulWidget {
   const ChangePassword({super.key});
@@ -11,11 +11,50 @@ class ChangePassword extends StatefulWidget {
 
 bool _isObscure = true;
 bool _isObscure2 = true;
+bool _isObscure3 = true;
 
 class _ChangePasswordState extends State<ChangePassword> {
 
   final TextEditingController _password = TextEditingController();
+  final TextEditingController _npassword = TextEditingController();
   final TextEditingController _cpassword = TextEditingController();
+
+Future<void> ChangePassword() async {
+  try {
+      final response = await supabase.auth.signInWithPassword(
+        email: supabase.auth.currentUser!.email!,
+        password: _password.text,
+      );
+
+      if (response.user == null) {
+        throw Exception('Current password is incorrect');
+      }
+
+      // If sign in was successful, update the password
+      await supabase.auth.updateUser(
+        UserAttributes(
+          password: _npassword.text,
+        ),
+      );
+
+      await supabase.from('tbl_user').update({
+        'user_password': _npassword.text,
+      }).eq('id', supabase.auth.currentUser!.id);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Password changed successfully'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+  } catch (e) {
+    
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,7 +106,7 @@ class _ChangePasswordState extends State<ChangePassword> {
                   height: 10,
                 ),
                 TextFormField(
-                  controller: _cpassword,
+                  controller: _npassword,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Enter Your New Password';
@@ -110,12 +149,12 @@ class _ChangePasswordState extends State<ChangePassword> {
                     label: Text("Confirm New Password"),
                     prefixIcon: Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      icon: Icon(_isObscure2
+                      icon: Icon(_isObscure3
                           ? Icons.visibility_off
                           : Icons.visibility),
                       onPressed: () {
                         setState(() {
-                          _isObscure2 = !_isObscure2;
+                          _isObscure3 = !_isObscure3;
                         });
                       },
                     ),
@@ -128,7 +167,7 @@ class _ChangePasswordState extends State<ChangePassword> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    
+                    ChangePassword();
                   },
                   child: Padding(
                     padding:

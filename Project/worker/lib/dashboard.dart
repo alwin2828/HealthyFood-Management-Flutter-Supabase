@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:worker/view_details.dart';
+import 'package:worker/dinein.dart';
+import 'package:worker/login.dart';
+import 'package:worker/main.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -9,62 +11,160 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
-  final mockOrder = {
-  'id': 'ORD123456',
-  'date': 'March 19, 2025',
-  'time': '2:30 PM',
-  'status': 'In Progress',
-  'items': [
-    {
-      'name': 'Margherita Pizza',
-      'quantity': 2,
-      'price': 24.99,
-      'options': 'Extra cheese, No basil',
-    },
-    {
-      'name': 'Pepperoni Pizza',
-      'quantity': 1,
-      'price': 14.99,
-      'options': 'Thin crust',
-    },
-    {
-      'name': 'Garlic Bread',
-      'quantity': 1,
-      'price': 5.99,
-    },
-  ],
-  'total': 65.97,
-  'subtotal': 58.97,
-  'tax': 4.00,
-  'deliveryFee': 3.00,
-  'paymentMethod': 'Credit Card',
-  'orderType': 'Delivery',
-  'customer': {
-    'name': 'John Doe',
-    'initials': 'JD',
-    'phone': '+1 (555) 123-4567',
-    'address': '123 Main Street, Apt 4B, New York, NY 10001',
-  },
-};
-  // int _selectedIndex = 0;
-  bool _isAvailable = true;
+  List<Map<String, dynamic>> orderList = [];
+  List<bool> _isExpandedList = []; // Tracks expansion state for each order
+  bool _isAvailable = false;
+  String name = "";
+  String imageUrl = "";
+
+  getMessage<String>(int status){
+    switch (status) {
+      case 0:
+        return 'Pending Order';
+      case 1:
+        return 'New Order';
+      case 2:
+        return 'Order Accepted';
+      case 3:
+        return 'Order Started Preparation';
+      case 4:
+        return 'Order Ready for Pickup';
+      case 5:
+        return 'Order Delivered';
+      case 6:
+        return 'Order Cancelled';
+      default:
+        return 'Unknown status';
+    }
+  }
+
+  Future<void> _updateOrderStatus(int orderId, int status) async {
+    try {
+      await supabase.from('tbl_order').update({
+        'order_status': status,
+      }).eq('id', orderId);
+
+      String message = getMessage(status); // Use the existing getMessage method
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // Optionally refresh the order list after updating the status
+      fetchOrders();
+    } catch (e) {
+      print('Error updating status: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Failed to update order status."),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> fetchUser() async {
+    try {
+      final response = await supabase
+          .from('tbl_staff')
+          .select()
+          .eq('id', supabase.auth.currentUser!.id)
+          .single();
+      if (response.isNotEmpty) {
+        final today = DateTime.now().toUtc().toIso8601String().substring(0, 10);
+        final validTimestamp = '$today 00:00:00Z';
+        final staffIdString = supabase.auth.currentUser!.id;
+        final attendance = await supabase
+            .from('tbl_attendence')
+            .select()
+            .eq('staff_id', staffIdString)
+            .eq('attendence_date', validTimestamp);
+        if (attendance.isNotEmpty) {
+          final status = attendance[0]['attendence_status'];
+          setState(() {
+            _isAvailable = status;
+          });
+        } else {
+          setState(() {
+            _isAvailable = false;
+          });
+        }
+        setState(() {
+          name = response['staff_name'];
+          imageUrl = response['staff_photo'] ?? "";
+        });
+      }
+    } catch (e) {
+      print('Error fetching user: $e');
+    }
+  }
+
+  Future<void> fetchOrders() async {
+    try {
+      final worker = await supabase
+          .from('tbl_staff')
+          .select("shop_id")
+          .eq('id', supabase.auth.currentUser!.id)
+          .single();
+      final shopId = worker['shop_id'];
+
+      // Get today's date in yyyy-MM-dd format
+      final today = DateTime.now().toUtc().toIso8601String().substring(0, 10);
+
+      final response = await supabase
+          .from('tbl_order')
+          .select(
+              "id,order_date,order_status,tbl_user(user_name),tbl_item(item_quantity,tbl_food(food_name,food_photo))")
+          .eq('shop_id', shopId)
+          .gte('order_status', 1)
+          .gte('order_date', '$today 00:00:00')
+          .lte('order_date', '$today 23:59:59')
+          .order('order_date', ascending: false);
+
+      print(response);
+      setState(() {
+        orderList = response;
+        _isExpandedList =
+            List.filled(orderList.length, false); // Initialize expansion state
+      });
+    } catch (e) {
+      print("Error fetching orders: $e");
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUser();
+    fetchOrders();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Theme colors
     const primaryColor = Color(0xFF3B82F6); // Blue
     const secondaryColor = Color(0xFF10B981); // Green
     const backgroundColor = Color(0xFFF9FAFB);
     const cardColor = Colors.white;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Dashboard"),
-        backgroundColor: secondaryColor ,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+            icon: const Icon(Icons.login_outlined),
+            onPressed: () {
+              supabase.auth.signOut().then((value) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => Login()),
+                  (route) => false,
+                );
+              }).catchError((error) {
+                print("Error signing out: $error");
+              });
+            },
           ),
         ],
       ),
@@ -72,7 +172,6 @@ class _DashboardState extends State<Dashboard> {
       body: SafeArea(
         child: Column(
           children: [
-            // App Bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
@@ -87,63 +186,53 @@ class _DashboardState extends State<Dashboard> {
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundImage: const AssetImage('assets/restaurant.jpg'),
-                  ),
+                  imageUrl == ""
+                      ? CircleAvatar(
+                          radius: 20,
+                          child: Text(name.isNotEmpty ? name[0] : "U"),
+                        )
+                      : CircleAvatar(
+                          radius: 20,
+                          backgroundImage: NetworkImage(imageUrl),
+                        ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "John Doe",
+                        Text(
+                          name,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: _isAvailable ? secondaryColor : Colors.grey,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _isAvailable ? "Available" : "Unavailable",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),
-                  Switch(
-                    value: _isAvailable,
-                    onChanged: (value) {
-                      setState(() {
-                        _isAvailable = value;
-                      });
-                    },
-                    activeColor: secondaryColor,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined),
-                    onPressed: () {},
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: _isAvailable ? secondaryColor : Colors.grey,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _isAvailable ? "Active" : "Inactive",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            
-            // Stats Section
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -171,8 +260,6 @@ class _DashboardState extends State<Dashboard> {
                 ],
               ),
             ),
-            
-            // New Orders Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -192,13 +279,15 @@ class _DashboardState extends State<Dashboard> {
                 ],
               ),
             ),
-            
-            // Orders List
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: 5,
+                itemCount: orderList.length,
                 itemBuilder: (context, index) {
+                  final order = orderList[index];
+                  final items = orderList[index]['tbl_item'];
+                  final isExpanded = _isExpandedList[index];
+
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     elevation: 0,
@@ -229,7 +318,7 @@ class _DashboardState extends State<Dashboard> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      "Order #${1000 + index}",
+                                      "Order #${1000 + order['id']}",
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -237,7 +326,7 @@ class _DashboardState extends State<Dashboard> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      "Customer: Alex Johnson",
+                                      order['tbl_user']['user_name'],
                                       style: TextStyle(
                                         color: Colors.grey.shade600,
                                         fontSize: 14,
@@ -261,11 +350,17 @@ class _DashboardState extends State<Dashboard> {
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      index % 2 == 0 ? "New" : "Ready",
+                                      getMessage(order['order_status']),
                                       style: TextStyle(
-                                        color: index % 2 == 0
+                                        color: order['order_status'] == 1
                                             ? Colors.orange
-                                            : secondaryColor,
+                                            : order['order_status'] == 2
+                                                ? Colors.blue
+                                                : order['order_status'] == 3
+                                                    ? Colors.amber
+                                                    : order['order_status'] == 4
+                                                        ? secondaryColor
+                                                        : Colors.grey,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
                                       ),
@@ -286,45 +381,106 @@ class _DashboardState extends State<Dashboard> {
                           const SizedBox(height: 12),
                           const Divider(),
                           const SizedBox(height: 8),
+                          // Conditionally show food details based on isExpanded
+                          if (isExpanded)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Food Details",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                ...items.map<Widget>((item) {
+                                  return ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundImage: NetworkImage(
+                                        item['tbl_food']['food_photo'],
+                                      ),
+                                    ),
+                                    title: Text(
+                                      item['tbl_food']['food_name'],
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    subtitle: Text(
+                                      "Quantity: ${item['item_quantity']}",
+                                      style: TextStyle(
+                                          color: Colors.grey.shade600),
+                                    ),
+                                  );
+                                }).toList(),
+                                const SizedBox(height: 8),
+                                const Divider(),
+                                const SizedBox(height: 8),
+                              ],
+                            ),
                           Row(
                             children: [
                               Expanded(
                                 child: OutlinedButton(
                                   onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => OrderDetailsView(order: mockOrder,),
-                                      ),
-                                    );
+                                    setState(() {
+                                      _isExpandedList[index] =
+                                          !_isExpandedList[index];
+                                    });
                                   },
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: Color(0xFF25A18B),
-                                    side: BorderSide(color: Color(0xFF25A18B)),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    foregroundColor: const Color(0xFF25A18B),
+                                    side: const BorderSide(
+                                        color: Color(0xFF25A18B)),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  child: const Text("View Details"),
+                                  child: Text(isExpanded
+                                      ? "Hide Details"
+                                      : "View Details"),
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Expanded(
+                              order['order_status'] <= 4 ? Expanded(
                                 child: ElevatedButton(
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    // Change function based on status
+                                    if (order['order_status'] == 1) {
+                                      _updateOrderStatus(order['id'], 2); // Accept Order
+                                    } else if (order['order_status'] == 2) {
+                                      _updateOrderStatus(order['id'], 3); // Start Preparation
+                                    } else if (order['order_status'] == 3) {
+                                      _updateOrderStatus(order['id'], 4); // Ready for Pickup
+                                    } else if (order['order_status'] == 4) {
+                                      _updateOrderStatus(order['id'], 5); // Order Picked Up
+                                    } 
+                                  },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Color(0xFF25A18B),
+                                    backgroundColor: const Color(0xFF25A18B),
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  child: const Text("Accept Order"),
+                                  child: Text(
+                                    order['order_status'] == 1
+                                        ? "Accept Order"
+                                        : order['order_status'] == 2
+                                            ? "Start Preparation"
+                                            : order['order_status'] == 3
+                                                ? "Ready for Pickup"
+                                                : order['order_status'] == 4
+                                                    ? "Order Picked Up"
+                                                    : "Manage Order",
+                                  ),
                                 ),
-                              ),
+                              ) : SizedBox(),
                             ],
                           ),
                         ],
@@ -334,8 +490,6 @@ class _DashboardState extends State<Dashboard> {
                 },
               ),
             ),
-            
-            // Bottom Navigation
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -347,53 +501,29 @@ class _DashboardState extends State<Dashboard> {
                   ),
                 ],
               ),
-              // child: BottomNavigationBar(
-              //   currentIndex: _selectedIndex,
-              //   onTap: (index) {
-              //     setState(() {
-              //       _selectedIndex = index;
-              //     });
-              //   },
-              //   selectedItemColor: primaryColor,
-              //   unselectedItemColor: Colors.grey,
-              //   showUnselectedLabels: true,
-              //   type: BottomNavigationBarType.fixed,
-              //   items: const [
-              //     BottomNavigationBarItem(
-              //       icon: Icon(Icons.dashboard_outlined),
-              //       activeIcon: Icon(Icons.dashboard),
-              //       label: 'Dashboard',
-              //     ),
-              //     BottomNavigationBarItem(
-              //       icon: Icon(Icons.list_alt_outlined),
-              //       activeIcon: Icon(Icons.list_alt),
-              //       label: 'Orders',
-              //     ),
-              //     BottomNavigationBarItem(
-              //       icon: Icon(Icons.history_outlined),
-              //       activeIcon: Icon(Icons.history),
-              //       label: 'History',
-              //     ),
-              //     BottomNavigationBarItem(
-              //       icon: Icon(Icons.person_outline),
-              //       activeIcon: Icon(Icons.person),
-              //       label: 'Profile',
-              //     ),
-              //   ],
-              // ),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: primaryColor,
-        child: const Icon(Icons.add),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DineIn(),
+            ),
+          );
+        },
+        backgroundColor: const Color(0xFF25A18B),
+        child: const Icon(Icons.add,
+          color: Colors.white,
+        ),
       ),
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -445,5 +575,5 @@ class _DashboardState extends State<Dashboard> {
       ),
     );
   }
-}
 
+}

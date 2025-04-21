@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shop/my_profile.dart';
+import 'package:shop/screens/my_profile.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;

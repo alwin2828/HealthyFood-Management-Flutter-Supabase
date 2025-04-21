@@ -1,4 +1,9 @@
+import 'package:admin/main.dart';
+import 'package:admin/screens/accepted_shops.dart';
+import 'package:admin/screens/login.dart';
 import 'package:admin/screens/manage_food.dart';
+import 'package:admin/screens/rejected_shops.dart';
+import 'package:admin/screens/shop_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -26,10 +31,22 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
   // Page definitions
   final List<PageInfo> pages = [
     PageInfo(
-      title: 'Profile',
-      icon: Icons.account_circle_outlined,
-      selectedIcon: Icons.account_circle,
-      content: Profile(),
+      title: 'Dashboard',
+      icon: Icons.dashboard_outlined,
+      selectedIcon: Icons.dashboard,
+      content: ShopVerification(),
+    ),
+    PageInfo(
+      title: 'Accepted Shops',
+      icon: Icons.person_outline,
+      selectedIcon: Icons.person,
+      content: AcceptedShops(),
+    ),
+    PageInfo(
+      title: 'Rejected Shops',
+      icon: Icons.person_off_outlined,
+      selectedIcon: Icons.person_off,
+      content: RejectedShops(),
     ),
     PageInfo(
       title: 'District',
@@ -67,6 +84,14 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
       selectedIcon: Icons.food_bank,
       content: ManageFood(),
     ),
+    
+    PageInfo(
+      title: 'complaint',
+      icon: Icons.warning_amber_outlined,
+      selectedIcon: Icons.settings,
+      content: ShopVerification(),
+    ),
+    
   ];
 
   @override
@@ -241,37 +266,45 @@ class _DashboardState extends State<Dashboard> with SingleTickerProviderStateMix
                 ),
 
                 // Logout button
-                Container(
-                  padding: EdgeInsets.all(isSidebarCollapsed ? 10 : 20),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: Color(0xFFEEF2F6), width: 1),
-                    ),
-                  ),
-                  child: isSidebarCollapsed
-                      ? IconButton(
-                          icon: Icon(Icons.logout, color: Colors.white),
-                          onPressed: () {},
-                        )
-                      : ElevatedButton.icon(
-                          onPressed: () {},
-                          icon: Icon(Icons.logout, color: Colors.white),
-                          label: Text("Logout"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF25A18B),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            minimumSize: Size(double.infinity, 45),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            textStyle: GoogleFonts.poppins(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                ),
+              //   Container(
+              //     padding: EdgeInsets.all(isSidebarCollapsed ? 10 : 20),
+              //     decoration: BoxDecoration(
+              //       border: Border(
+              //         top: BorderSide(color: Color(0xFFEEF2F6), width: 1),
+              //       ),
+              //     ),
+              //     child: isSidebarCollapsed
+              //         ? IconButton(
+              //             icon: Icon(Icons.logout, color: Colors.white),
+              //             onPressed: () {},
+              //           )
+              //         : ElevatedButton.icon(
+              //             onPressed: () {supabase.auth.signOut().then((value) {
+              //   Navigator.pushAndRemoveUntil(
+              //     context,
+              //     MaterialPageRoute(builder: (context) => Login()),
+              //     (route) => false,
+              //   );
+              // }).catchError((error) {
+              //   print("Error signing out: $error");
+              // });},
+              //             icon: Icon(Icons.logout, color: Colors.white),
+              //             label: Text("Logout"),
+              //             style: ElevatedButton.styleFrom(
+              //               backgroundColor: Color(0xFF25A18B),
+              //               foregroundColor: Colors.white,
+              //               elevation: 0,
+              //               minimumSize: Size(double.infinity, 45),
+              //               shape: RoundedRectangleBorder(
+              //                 borderRadius: BorderRadius.circular(10),
+              //               ),
+              //               textStyle: GoogleFonts.poppins(
+              //                 fontSize: 15,
+              //                 fontWeight: FontWeight.w500,
+              //               ),
+              //             ),
+              //           ),
+              //   ),
               ],
             ),
           ),

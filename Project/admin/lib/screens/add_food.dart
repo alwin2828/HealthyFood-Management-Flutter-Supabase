@@ -68,7 +68,7 @@ class _AddFoodState extends State<AddFood> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // padding: EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         
         color: Colors.white,

@@ -62,19 +62,12 @@ class _DietPlanState extends State<DietPlan> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Diet Plans"),
-        // backgroundColor: Colors.green.shade200,
+        backgroundColor: Colors.grey[100],
         elevation: 0,
       ),
       body: Container(
         decoration: BoxDecoration(
-          // gradient: LinearGradient(
-          //   colors: [
-          //     Colors.green.shade200,
-          //     Colors.white,
-          //   ],
-          //   begin: Alignment.topCenter,
-          //   end: Alignment.bottomCenter,
-          // ),
+          color: Colors.grey[100],
         ),
         child: Column(
           children: [

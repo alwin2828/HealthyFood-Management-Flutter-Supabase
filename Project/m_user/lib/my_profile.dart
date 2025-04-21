@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:m_user/change_pass.dart';
 import 'package:m_user/main.dart';
+import 'package:m_user/settings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MyProfile extends StatefulWidget {
@@ -68,6 +69,17 @@ class _MyProfileState extends State<MyProfile> {
           icon: Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.settings, color: Colors.black),
+            onPressed: ()  {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SettingsPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -123,19 +135,7 @@ class _MyProfileState extends State<MyProfile> {
                 ),
                 child: Text("Update Profile"),
               ),
-               ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ChangePassword()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF25A18B),
-                  foregroundColor: Colors.white,
-                ),
-                child: Text("Change Password"),
-              ),
+              
             ],
           ),
         ),
